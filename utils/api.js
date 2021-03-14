@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiCaller = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_URL}/api`,
+  baseURL: `${process.env.URL}/api`,
 });
 
 export default apiCaller;
