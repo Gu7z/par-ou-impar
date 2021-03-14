@@ -1,0 +1,31 @@
+.responses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.square {
+  width: 104px;
+  height: 104px;
+  margin: 8px 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border: solid #a1a1a1;
+}
+
+.square_not_selected {
+  background-color: white;
+}
+
+.square_selected {
+  background-color: #545454;
+  color: white;
+}
+
+.square:hover {
+  background-color: #d3d3d3;
+}
