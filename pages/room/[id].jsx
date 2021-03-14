@@ -7,7 +7,7 @@ import { CopyDataToClipboard } from "../../utils";
 const WAITING_USERS = "Esperando Usuarios";
 const WAITING_ANOTHER_USER = "Esperando outro Usuario";
 const WAITING_RESPONSES = "Esperando Respostas";
-const ENDPOINT = process.env.URL;
+const ENDPOINT = process.env.API_URL;
 const socket = socketIoClient(ENDPOINT);
 
 function Room({ id }) {
