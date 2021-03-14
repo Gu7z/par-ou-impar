@@ -1,4 +1,4 @@
-const copyDataToClipboard = (data) => async () => {
+const copyDataToClipboard = (data) => {
   const element = document.createElement("textarea");
 
   element.value = data;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
 import styles from "../../styles/Home.module.css";
 import rommStyles from "../../styles/room.module.css";
+import { CopyDataToClipboard } from "../../utils";
 
 const WAITING_USERS = "Esperando Usuarios";
 const WAITING_RESPONSES = "Esperando Respostas";
@@ -161,6 +162,14 @@ function Room({ id }) {
 
   return (
     <div className={styles.container}>
+      <p
+        className={rommStyles.copy_link}
+        onClick={() => {
+          CopyDataToClipboard(window.location);
+        }}
+      >
+        Copiar o Link da sala
+      </p>
       <p>Digite seu nick (permanente)</p>
       <input
         type="text"
