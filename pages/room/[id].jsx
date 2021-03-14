@@ -7,11 +7,10 @@ import { CopyDataToClipboard } from "../../utils";
 const WAITING_USERS = "Esperando Usuarios";
 const WAITING_ANOTHER_USER = "Esperando outro Usuario";
 const WAITING_RESPONSES = "Esperando Respostas";
-const ENDPOINT = "https://par-ou-impar-api.vercel.app/";
+const ENDPOINT = process.env.NEXT_PUBLIC_API_URL;
 const socket = socketIoClient(ENDPOINT, {
   withCredentials: true,
   autoConnect: 10000,
-  transports: ["websocket"],
 });
 
 function Room({ id }) {
