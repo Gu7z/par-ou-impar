@@ -7,7 +7,7 @@ function Home() {
 
   const goToRoom = async () => {
     const room = await generateRooms();
-    route.push(`http://localhost:3000/room/${room}`);
+    route.push(`/room/${room}`);
   };
 
   return (
