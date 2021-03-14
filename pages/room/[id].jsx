@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import io from "socket.io-client";
+import socketIoClient from "socket.io-client";
 import styles from "../../styles/Home.module.css";
 import rommStyles from "../../styles/room.module.css";
 import { CopyDataToClipboard } from "../../utils";
 
 const WAITING_USERS = "Esperando Usuarios";
+const WAITING_ANOTHER_USER = "Esperando outro Usuario";
 const WAITING_RESPONSES = "Esperando Respostas";
+const ENDPOINT = process.env.URL;
+const socket = socketIoClient(ENDPOINT);
 
 function Room({ id }) {
   const [userResponse, setUserResponse] = useState("");
@@ -32,33 +35,42 @@ function Room({ id }) {
     if (winner) {
       if (winner === username) {
         setMessage(WON);
-        setUserPoints((oldPoints) => oldPoints + 1);
       } else {
         setMessage(LOSE);
-        setOtherUserPoints((oldPoints) => oldPoints + 1);
       }
     }
   };
 
+  const sendNick = (localUsername = "") => {
+    const usernameToSend = localUsername || username;
+
+    socket.emit("sendNick", { username: usernameToSend, id });
+    setIsUsernameSetted(true);
+  };
+
   useEffect(() => {
-    const localUsername = localStorage.getItem("username");
+    const localUsername = localStorage.getItem("username") || username;
     if (localUsername) {
       setUsername(localUsername);
       sendNick(localUsername);
+
+      socket.on(`setPoints-${id}`, (points) => {
+        const { [localUsername]: userPointsFromServer, ...otherUser } = points;
+        const otherUserPointsFromServer = Object.values(otherUser)[0];
+
+        setUserPoints(userPointsFromServer);
+        setOtherUserPoints(otherUserPointsFromServer);
+      });
     }
   }, []);
 
   useEffect(() => {
-    fetch("/api/manage_rooms").finally(() => {
-      const socket = io();
+    socket.on(`setUsers-${id}`, (users) => {
+      setUsers(users);
+    });
 
-      socket.on(`setUsers-${id}`, (users) => {
-        setUsers(users);
-      });
-
-      socket.on(`start-${id}`, () => {
-        setCanWeStart(true);
-      });
+    socket.on(`start-${id}`, () => {
+      setCanWeStart(true);
     });
   }, []);
 
@@ -75,89 +87,61 @@ function Room({ id }) {
     if (canWeStart) {
       setMessage(WAITING_RESPONSES);
 
-      fetch("/api/manage_rooms").finally(() => {
-        const socket = io();
+      socket.on(`winner-${id}`, (str) => {
+        setWinner(str);
+        setCanShowMessage(true);
+        setUserResponse("");
+        setIsParSelected(false);
+        setIsImparSelected(false);
+      });
 
-        socket.on(`winner-${id}`, (str) => {
-          setWinner(str);
-          setCanShowMessage(true);
-          setUserResponse("");
-          setIsParSelected(false);
+      socket.on(`wait-${username}`, () => {
+        setMessage(WAITING_ANOTHER_USER);
+      });
+
+      socket.on(`setPar-${id}`, (usernameFromSocket) => {
+        if (usernameFromSocket !== username) {
+          setIsParSelected(true);
           setIsImparSelected(false);
-        });
+          clearMessageAndWinner();
+        }
+      });
 
-        socket.on(`wait-${username}`, (msg) => {
-          console.log("Esperar");
-          console.log(msg);
-        });
-
-        socket.on(`setPar-${id}`, (usernameFromSocket) => {
-          console.log("setPar");
-          if (usernameFromSocket !== username) {
-            setIsParSelected(true);
-            setIsImparSelected(false);
-            clearMessageAndWinner();
-          }
-        });
-
-        socket.on(`setImpar-${id}`, (usernameFromSocket) => {
-          console.log("setImpar");
-          if (usernameFromSocket !== username) {
-            setIsImparSelected(true);
-            setIsParSelected(false);
-            clearMessageAndWinner();
-          }
-        });
+      socket.on(`setImpar-${id}`, (usernameFromSocket) => {
+        if (usernameFromSocket !== username) {
+          setIsImparSelected(true);
+          setIsParSelected(false);
+          clearMessageAndWinner();
+        }
       });
     }
   }, [canWeStart]);
 
   const sendResponse = () => {
-    fetch("/api/manage_rooms").finally(() => {
-      if (userResponse !== null) {
-        const socket = io();
+    if (userResponse !== null) {
+      const data = {
+        username,
+        response: userResponse,
+        id,
+      };
 
-        console.log(userResponse);
-
-        const data = {
-          username,
-          response: userResponse,
-          id,
-        };
-
-        socket.emit("sendUserResponse", data);
-      }
-    });
+      socket.emit("sendUserResponse", data);
+    }
   };
 
   const setImparOrPar = (str) => {
-    fetch("/api/manage_rooms").finally(() => {
-      if (userResponse !== null) {
-        const socket = io();
+    if (userResponse !== null) {
+      const isPar = str === "par" ? true : false;
 
-        const isPar = str === "par" ? true : false;
+      const data = {
+        username,
+        par: isPar,
+        impar: !isPar,
+        id,
+      };
 
-        const data = {
-          username,
-          par: isPar,
-          impar: !isPar,
-          id,
-        };
-
-        socket.emit("setParOrImpar", data);
-      }
-    });
-  };
-
-  const sendNick = (localUsername = "") => {
-    fetch("/api/manage_rooms").finally(() => {
-      const socket = io();
-
-      const usernameToSend = localUsername || username;
-
-      socket.emit("sendNick", { username: usernameToSend, id });
-      setIsUsernameSetted(true);
-    });
+      socket.emit("setParOrImpar", data);
+    }
   };
 
   return (
