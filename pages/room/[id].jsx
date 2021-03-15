@@ -23,6 +23,7 @@ function Room({ id }) {
   const [isImparSelected, setIsImparSelected] = useState(false);
   const [message, setMessage] = useState("");
   const [canShowMessage, setCanShowMessage] = useState(false);
+  const [messageColor, setMessageColor] = useState("#000");
   const [winner, setWinner] = useState(WAITING_USERS);
   const [canWeStart, setCanWeStart] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
@@ -41,8 +42,10 @@ function Room({ id }) {
     if (winner) {
       if (winner === username) {
         setMessage(WON);
+        setMessageColor("#0F0");
       } else {
         setMessage(LOSE);
+        setMessageColor("#F00");
       }
     }
   };
@@ -52,6 +55,21 @@ function Room({ id }) {
 
     socket.emit("sendNick", { username: usernameToSend, id });
     setIsUsernameSetted(true);
+  };
+
+  const setImparOrPar = (str) => {
+    if (userResponse !== null) {
+      const isPar = str === "par" ? true : false;
+
+      const data = {
+        username,
+        par: isPar,
+        impar: !isPar,
+        id,
+      };
+
+      socket.emit("setParOrImpar", data);
+    }
   };
 
   useEffect(() => {
@@ -84,6 +102,39 @@ function Room({ id }) {
         setOtherUserPoints(otherUserPointsFromServer);
       });
 
+      socket.emit(`getChoice`, { username, id }, (choiceFromServer) => {
+        const {
+          [username]: userChoiceFromServer,
+          ...otherUser
+        } = choiceFromServer;
+        const otherUserChoiceFromServer =
+          otherUser && Object.values(otherUser)[0];
+
+        if (userChoiceFromServer) {
+          if (userChoiceFromServer === "par") {
+            setIsParSelected(true);
+            setImparOrPar("par");
+          } else {
+            setIsImparSelected(true);
+            setImparOrPar("impar");
+          }
+        } else if (otherUserChoiceFromServer) {
+          if (otherUserChoiceFromServer === "par") {
+            setIsImparSelected(true);
+            setImparOrPar("impar");
+          } else {
+            setIsParSelected(true);
+            setImparOrPar("par");
+          }
+        }
+
+        // if (choiceFromServer === "par") {
+        //   setIsParSelected(true);
+        // } else if (choiceFromServer === "impar") {
+        //   setIsImparSelected(true);
+        // }
+      });
+
       socket.on(`setUsers-${id}`, (users) => {
         setUsers(users);
       });
@@ -100,6 +151,7 @@ function Room({ id }) {
     } else {
       setWinner("");
       setMessage(WAITING_RESPONSES);
+      setMessageColor("#000");
     }
   }, [canShowMessage]);
 
@@ -137,30 +189,15 @@ function Room({ id }) {
     }
   }, [canWeStart]);
 
-  const sendResponse = () => {
-    if (userResponse !== null) {
+  const sendResponse = (response) => {
+    if (response !== null) {
       const data = {
         username,
-        response: userResponse,
+        response,
         id,
       };
 
       socket.emit("sendUserResponse", data);
-    }
-  };
-
-  const setImparOrPar = (str) => {
-    if (userResponse !== null) {
-      const isPar = str === "par" ? true : false;
-
-      const data = {
-        username,
-        par: isPar,
-        impar: !isPar,
-        id,
-      };
-
-      socket.emit("setParOrImpar", data);
     }
   };
 
@@ -236,7 +273,10 @@ function Room({ id }) {
         />
         <p>Impar</p>
       </div>
-      {(isImparSelected || isParSelected) && (
+      {(isImparSelected || isParSelected) && userResponse && (
+        <p>Voce selecionou o numero: {userResponse}</p>
+      )}
+      {(isImparSelected || isParSelected) && !userResponse && (
         <div className={rommStyles.responses}>
           {[...Array(10).keys()].map((value) => {
             return (
@@ -247,7 +287,10 @@ function Room({ id }) {
                     ? rommStyles.square_selected
                     : rommStyles.square_not_selected
                 }`}
-                onClick={() => setUserResponse(value + 1)}
+                onClick={() => {
+                  setUserResponse(value + 1);
+                  sendResponse(value + 1);
+                }}
               >
                 {value + 1}
               </div>
@@ -255,15 +298,8 @@ function Room({ id }) {
           })}
         </div>
       )}
-      <button
-        onClick={() => {
-          sendResponse();
-        }}
-      >
-        Enviar
-      </button>
 
-      <h3>{message}</h3>
+      <h3 style={{ color: messageColor }}>{message}</h3>
 
       <p>Usuários e pontuação: </p>
       <ul style={{ margin: 0 }}>
