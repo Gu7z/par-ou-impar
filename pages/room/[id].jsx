@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import socketIoClient from "socket.io-client";
 import styles from "../../styles/Home.module.css";
 import rommStyles from "../../styles/room.module.css";
@@ -26,6 +27,8 @@ function Room({ id }) {
   const [canWeStart, setCanWeStart] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
   const [otherUserPoints, setOtherUserPoints] = useState(0);
+  const [canIEnter, setCanIEnter] = useState(false);
+  const route = useRouter();
 
   const clearMessageAndWinner = () => {
     setCanShowMessage(false);
@@ -54,28 +57,42 @@ function Room({ id }) {
   useEffect(() => {
     const localUsername = localStorage.getItem("username") || username;
     if (localUsername) {
-      setUsername(localUsername);
-      sendNick(localUsername);
+      socket.emit(
+        `canIEnter`,
+        { username: localUsername, id },
+        (socketResponse) => {
+          if (!socketResponse) {
+            route.push("/");
+          } else {
+            setUsername(localUsername);
+            sendNick(localUsername);
 
+            setCanIEnter(true);
+          }
+        }
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (canIEnter) {
       socket.on(`setPoints-${id}`, (points) => {
-        const { [localUsername]: userPointsFromServer, ...otherUser } = points;
+        const { [username]: userPointsFromServer, ...otherUser } = points;
         const otherUserPointsFromServer = Object.values(otherUser)[0];
 
         setUserPoints(userPointsFromServer);
         setOtherUserPoints(otherUserPointsFromServer);
       });
+
+      socket.on(`setUsers-${id}`, (users) => {
+        setUsers(users);
+      });
+
+      socket.on(`start-${id}`, () => {
+        setCanWeStart(true);
+      });
     }
-  }, []);
-
-  useEffect(() => {
-    socket.on(`setUsers-${id}`, (users) => {
-      setUsers(users);
-    });
-
-    socket.on(`start-${id}`, () => {
-      setCanWeStart(true);
-    });
-  }, []);
+  }, [canIEnter]);
 
   useEffect(() => {
     if (canShowMessage) {
@@ -87,7 +104,7 @@ function Room({ id }) {
   }, [canShowMessage]);
 
   useEffect(() => {
-    if (canWeStart) {
+    if (canWeStart && canIEnter) {
       setMessage(WAITING_RESPONSES);
 
       socket.on(`winner-${id}`, (str) => {
@@ -146,6 +163,10 @@ function Room({ id }) {
       socket.emit("setParOrImpar", data);
     }
   };
+
+  if (!canIEnter) {
+    return null;
+  }
 
   return (
     <div className={styles.container}>
