@@ -13,7 +13,9 @@ function Home() {
   return (
     <div className={styles.container}>
       <h3>Gerar sala</h3>
-      <button onClick={goToRoom}>Gerar</button>
+      <div className={styles.generate_room_button} onClick={goToRoom}>
+        Gerar
+      </div>
     </div>
   );
 }

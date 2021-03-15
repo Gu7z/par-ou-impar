@@ -120,3 +120,21 @@
     flex-direction: column;
   }
 }
+
+.generate_room_button {
+  background-color: #d3d3d3;
+  box-shadow: 0 5px 0 #545454;
+  padding: 0.5em 1em;
+  position: relative;
+  text-decoration: none;
+}
+
+.generate_room_button:hover {
+  background-color: #a1a1a1;
+  cursor: pointer;
+}
+
+.generate_room_button:active {
+  box-shadow: none;
+  top: 5px;
+}
