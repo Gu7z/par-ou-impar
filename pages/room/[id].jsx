@@ -56,26 +56,26 @@ function Room({ id }) {
 
   useEffect(() => {
     const localUsername = localStorage.getItem("username") || username;
-    if (localUsername) {
-      socket.emit(
-        `canIEnter`,
-        { username: localUsername, id },
-        (socketResponse) => {
-          if (!socketResponse) {
-            route.push("/");
-          } else {
+    socket.emit(
+      `canIEnter`,
+      { username: localUsername, id },
+      (socketResponse) => {
+        if (!socketResponse) {
+          route.push("/");
+        } else {
+          if (localUsername) {
             setUsername(localUsername);
             sendNick(localUsername);
-
-            setCanIEnter(true);
           }
+
+          setCanIEnter(true);
         }
-      );
-    }
+      }
+    );
   }, []);
 
   useEffect(() => {
-    if (canIEnter) {
+    if (canIEnter && username) {
       socket.on(`setPoints-${id}`, (points) => {
         const { [username]: userPointsFromServer, ...otherUser } = points;
         const otherUserPointsFromServer = Object.values(otherUser)[0];
@@ -92,7 +92,7 @@ function Room({ id }) {
         setCanWeStart(true);
       });
     }
-  }, [canIEnter]);
+  }, [canIEnter, username]);
 
   useEffect(() => {
     if (canShowMessage) {
