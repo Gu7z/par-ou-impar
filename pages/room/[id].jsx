@@ -8,6 +8,8 @@ import { CopyDataToClipboard } from "../../utils";
 const WAITING_USERS = "Esperando Usuarios";
 const WAITING_ANOTHER_USER = "Esperando outro Usuario";
 const WAITING_RESPONSES = "Esperando Respostas";
+const EXPIRED_SESSION = "A sessão expirou";
+
 const ENDPOINT = process.env.NEXT_PUBLIC_API_URL;
 const socket = socketIoClient(ENDPOINT, {
   withCredentials: true,
@@ -127,12 +129,6 @@ function Room({ id }) {
             setImparOrPar("par");
           }
         }
-
-        // if (choiceFromServer === "par") {
-        //   setIsParSelected(true);
-        // } else if (choiceFromServer === "impar") {
-        //   setIsImparSelected(true);
-        // }
       });
 
       socket.on(`setUsers-${id}`, (users) => {
@@ -141,6 +137,11 @@ function Room({ id }) {
 
       socket.on(`start-${id}`, () => {
         setCanWeStart(true);
+      });
+
+      socket.on(`session-clear-${id}`, () => {
+        alert(EXPIRED_SESSION);
+        route.push("/");
       });
     }
   }, [canIEnter, username]);
